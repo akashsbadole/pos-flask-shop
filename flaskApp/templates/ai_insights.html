@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}AI Insights - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">AI Insights</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button class="btn btn-sm btn-outline-secondary" id="refreshInsightsBtn">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Sales Forecast</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> AI-powered sales forecast for the next 7 days
+                </div>
+                <div id="salesForecastContent">
+                    <p class="text-center">Loading forecast...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Inventory Recommendations</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> AI recommendations for inventory optimization
+                </div>
+                <div id="inventoryRecommendationsContent">
+                    <p class="text-center">Loading recommendations...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Customer Insights</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> AI analysis of customer behavior and preferences
+                </div>
+                <div id="customerInsightsContent">
+                    <p class="text-center">Loading insights...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">AI Assistant</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Ask questions about your business using natural language
+                </div>
+                
+                <div class="mb-3" id="chatContainer" style="height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem;">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-chat-dots fs-1"></i>
+                        <p>Ask me anything about your business</p>
+                        <p class="small">Examples: "How are sales today?", "Which products are low on stock?", "Who are my best customers?"</p>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" class="form-control" id="aiChatInput" placeholder="Type your question here...">
+                    <button class="btn btn-primary" type="button" id="sendChatBtn">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="voiceChatBtn">
+                        <i class="bi bi-mic"></i> Voice Input
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Load AI insights
+        loadAIInsights();
+        
+        // Refresh insights
+        $('#refreshInsightsBtn').click(function() {
+            loadAIInsights();
+        });
+        
+        // AI Chat
+        $('#sendChatBtn').click(sendChatMessage);
+        $('#aiChatInput').keypress(function(e) {
+            if (e.which === 13) {
+                sendChatMessage();
+            }
+        });
+        
+        function sendChatMessage() {
+            let input = $('#aiChatInput').val().trim();
+            if (!input) return;
+            
+            // Add user message to chat
+            addChatMessage('user', input);
+            
+            // Clear input
+            $('#aiChatInput').val('');
+            
+            // Show typing indicator
+            $('#chatContainer').append('<div class="text-center text-muted my-2">AI is typing...</div>');
+            
+            // Send to server
+            $.ajax({
+                url: '/chatbot/message',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ input: input }),
+                success: function(response) {
+                    // Remove typing indicator
+                    $('#chatContainer').find('.text-center:contains("AI is typing")').remove();
+                    
+                    if (response.response) {
+                        addChatMessage('ai', response.response);
+                        
+                        if (response.requires_confirmation) {
+                            // Add confirmation buttons
+                            $('#chatContainer').append(`
+                                <div class="text-center my-2">
+                                    <button class="btn btn-sm btn-success me-2" onclick="confirmAction('${response.action}')">Confirm</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelAction()">Cancel</button>
+                                </div>
+                            `);
+                        }
+                    } else if (response.error) {
+                        addChatMessage('system', 'Error: ' + response.error);
+                    }
+                },
+                error: function() {
+                    // Remove typing indicator
+                    $('#chatContainer').find('.text-center:contains("AI is typing")').remove();
+                    addChatMessage('system', 'Error: Failed to get response from AI');
+                }
+            });
+        }
+        
+        function addChatMessage(sender, message) {
+            let timestamp = new Date().toLocaleTimeString();
+            let messageClass = sender === 'user' ? 'text-end' : 'text-start';
+            let bgClass = sender === 'user' ? 'bg-primary text-white' : 'bg-light';
+            
+            $('#chatContainer').append(`
+                <div class="${messageClass} mb-2">
+                    <div class="${bgClass} rounded p-2 d-inline-block">
+                        <small>${timestamp}</small><br>
+                        ${message}
+                    </div>
+                </div>
+            `);
+            
+            // Scroll to bottom
+            $('#chatContainer').scrollTop($('#chatContainer')[0].scrollHeight);
+        }
+        
+        function confirmAction(action) {
+            // Remove confirmation buttons
+            $('#chatContainer').find('.text-center:has("button")').remove();
+            
+            // Add message
+            addChatMessage('system', 'Executing action: ' + action);
+            
+            // Execute action
+            $.ajax({
+                url: '/chatbot/execute-action',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ action: action }),
+                success: function(response) {
+                    if (response.response) {
+                        addChatMessage('ai', response.response);
+                        
+                        if (response.redirect) {
+                            setTimeout(function() {
+                                window.location.href = response.redirect;
+                            }, 2000);
+                        }
+                    } else if (response.error) {
+                        addChatMessage('system', 'Error: ' + response.error);
+                    }
+                },
+                error: function() {
+                    addChatMessage('system', 'Error: Failed to execute action');
+                }
+            });
+        }
+        
+        function cancelAction() {
+            // Remove confirmation buttons
+            $('#chatContainer').find('.text-center:has("button")').remove();
+            
+            // Add message
+            addChatMessage('system', 'Action cancelled');
+        }
+        
+        // Voice input (placeholder)
+        $('#voiceChatBtn').click(function() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                addChatMessage('system', 'Listening... Speak now.');
+                
+                // In a real implementation, you would use the Web Speech API
+                setTimeout(function() {
+                    addChatMessage('system', 'Voice input would be processed here.');
+                }, 2000);
+            } else {
+                addChatMessage('system', 'Your browser does not support speech recognition.');
+            }
+        });
+        
+        function loadAIInsights() {
+            // Load sales forecast
+            $('#salesForecastContent').html('<p class="text-center">Loading forecast...</p>');
+            
+            setTimeout(function() {
+                $('#salesForecastContent').html(`
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Predicted Sales</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${new Date().toLocaleDateString()}</td>
+                                    <td>₹5,000.00</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" style="width: 85%;" role="progressbar">85%</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>${new Date(Date.now() + 86400000).toLocaleDateString()}</td>
+                                    <td>₹4,500.00</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" style="width: 75%;" role="progressbar">75%</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>${new Date(Date.now() + 172800000).toLocaleDateString()}</td>
+                                    <td>₹6,200.00</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" style="width: 70%;" role="progressbar">70%</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `);
+            }, 1000);
+            
+            // Load inventory recommendations
+            $('#inventoryRecommendationsContent').html('<p class="text-center">Loading recommendations...</p>');
+            
+            setTimeout(function() {
+                $('#inventoryRecommendationsContent').html(`
+                    <div class="list-group">
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Burger</h6>
+                                    <p class="mb-1">Stock is below minimum level</p>
+                                    <small>Recommended to reorder 50 units</small>
+                                </div>
+                                <span class="badge bg-warning">Reorder</span>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Pizza</h6>
+                                    <p class="mb-1">Stock is below minimum level</p>
+                                    <small>Recommended to reorder 30 units</small>
+                                </div>
+                                <span class="badge bg-warning">Reorder</span>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Coke</h6>
+                                    <p class="mb-1">Stock is adequate</p>
+                                    <small>No action needed at this time</small>
+                                </div>
+                                <span class="badge bg-success">OK</span>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }, 1000);
+            
+            // Load customer insights
+            $('#customerInsightsContent').html('<p class="text-center">Loading insights...</p>');
+            
+            setTimeout(function() {
+                $('#customerInsightsContent').html(`
+                    <div class="mb-3">
+                        <h6>Top Customer Segments</h6>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Regular Customers</h6>
+                                        <p class="mb-1">Visit frequently, moderate spending</p>
+                                        <small>Average spend: ₹500.00</small>
+                                    </div>
+                                    <span class="badge bg-primary">45%</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">VIP Customers</h6>
+                                        <p class="mb-1">Visit frequently, high spending</p>
+                                        <small>Average spend: ₹2,000.00</small>
+                                    </div>
+                                    <span class="badge bg-primary">25%</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">New Customers</h6>
+                                        <p class="mb-1">First-time visitors</p>
+                                        <small>Average spend: ₹150.00</small>
+                                    </div>
+                                    <span class="badge bg-primary">30%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h6>Churn Risk</h6>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">John Doe</h6>
+                                        <p class="mb-1">Last purchase: 30 days ago</p>
+                                        <small>Recommended action: Send special offer</small>
+                                    </div>
+                                    <span class="badge bg-warning">High Risk</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Jane Smith</h6>
+                                        <p class="mb-1">Last purchase: 7 days ago</p>
+                                        <small>Recommended action: Regular engagement</small>
+                                    </div>
+                                    <span class="badge bg-success">Low Risk</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }, 1000);
+        }
+    });
+</script>
+{% endblock %}

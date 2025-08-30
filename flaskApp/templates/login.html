@@ -5,63 +5,114 @@
 {% block head %}
 <style>
     body {
+        background-color: #f8f9fa;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    /* Header */
+    .header {
+        background-color: #007bff;
+        padding: 12px 20px;
         display: flex;
         align-items: center;
-        padding-top: 40px;
-        padding-bottom: 40px;
-        background-color: #f5f5f5;
+        color: #fff;
     }
-    .form-signin {
-        width: 100%;
-        max-width: 330px;
-        padding: 15px;
-        margin: auto;
+    .header img {
+        height: 40px;
+        margin-right: 10px;
     }
-    .form-signin .form-floating:focus-within {
-        z-index: 2;
+    .header h2 {
+        font-size: 1.2rem;
+        margin: 0;
+        font-weight: 500;
     }
-    .form-signin input[type="text"] {
-        margin-bottom: -1px;
-        border-bottom-right-radius: 0;
-        border-bottom-left-radius: 0;
-    }
-    .form-signin input[type="password"] {
-        margin-bottom: 10px;
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-    }
+
+    /* Centered login box */
     .login-container {
-        height: 100vh;
+        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    .login-card {
+        background: #fff;
+        padding: 30px 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 360px;
+        text-align: center;
+    }
+    .login-card h1 {
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+    .login-card p {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    .form-floating {
+        margin-bottom: 15px;
+        text-align: left;
+    }
+    .form-control {
+        font-size: 0.95rem;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    .btn-login {
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 8px;
+    }
+
+    /* Footer */
+    .footer {
+        background-color: #f1f1f1;
+        text-align: center;
+        padding: 10px;
+        font-size: 0.85rem;
+        color: #6c757d;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <main class="form-signin">
-        <form method="post">
-            <div class="text-center mb-4">
-                <i class="bi bi-shop" style="font-size: 3rem; color: #007bff;"></i>
-                <h1 class="h3 mb-3 fw-normal">POS System</h1>
-                <p class="text-muted">Please sign in to continue</p>
-            </div>
+<!-- Header -->
+<div class="header">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    <h2>POS System</h2>
+</div>
 
-            <div class="form-floating mb-3">
+<!-- Login -->
+<div class="login-container">
+    <div class="login-card">
+        <h1>Welcome Back</h1>
+        <p>Please sign in to continue</p>
+
+        <form method="post">
+            <div class="form-floating">
                 <input type="text" class="form-control" id="username" name="username" placeholder="Username" required autofocus>
                 <label for="username">Username</label>
             </div>
-            <div class="form-floating mb-3">
+            <div class="form-floating">
                 <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
                 <label for="password">Password</label>
             </div>
-
-            <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
-            
-            <p class="mt-5 mb-3 text-muted text-center">&copy; 2023 POS System</p>
+            <button class="btn btn-primary btn-login" type="submit">Sign in</button>
         </form>
-    </main>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    &copy; 2023 POS System | My Business Pvt Ltd
 </div>
 {% endblock %}

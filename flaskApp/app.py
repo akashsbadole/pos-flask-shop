@@ -527,7 +527,7 @@ def api_products():
         params.append(category_id)
     
     if search:
-        query += " AND (LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ?)"
+        query += " AND (LOWER(p.name) LIKE ? COLLATE NOCASE OR LOWER(p.description) LIKE ? COLLATE NOCASE)"
         params.extend([f"%{search.lower()}%", f"%{search.lower()}%"])
     
     query += " ORDER BY p.name"
@@ -1190,7 +1190,7 @@ def export_products():
         io.BytesIO(output.getvalue().encode('utf-8')),
         mimetype='text/csv',
         as_attachment=True,
-        attachment_filename='products.csv'
+        download_name='products.csv'
     )
 
 
@@ -1623,7 +1623,8 @@ def number_to_words(num):
 @login_required
 @manager_required
 def reports():
-    from datetime import timedelta
+    from datetime import datetime, timedelta
+    
     now = datetime.now().strftime('%Y-%m-%d')
     thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     
@@ -1633,7 +1634,6 @@ def reports():
         thirty_days_ago=thirty_days_ago
     )
 
-
 @app.route('/ai_settings', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -1641,8 +1641,8 @@ def ai_settings():
     if request.method == 'POST':
         # Update AI settings
         settings = {
-            'n8n_webhook_url': request.form.get('n8n_webhook_url'),
-            'n8n_api_key': request.form.get('n8n_api_key'),
+            # 'n8n_webhook_url': request.form.get('n8n_webhook_url'),
+            # 'n8n_api_key': request.form.get('n8n_api_key'),
             'ai_enabled': 'ai_enabled' in request.form,
             'forecasting_enabled': 'forecasting_enabled' in request.form,
             'anomaly_detection_enabled': 'anomaly_detection_enabled' in request.form,
@@ -1658,8 +1658,8 @@ def ai_settings():
     
     # Get current settings (in a real implementation, these would be from the database)
     settings = {
-        'n8n_webhook_url': N8N_WEBHOOK_URL,
-        'n8n_api_key': N8N_API_KEY,
+        # 'n8n_webhook_url': N8N_WEBHOOK_URL,
+        # 'n8n_api_key': N8N_API_KEY,
         'ai_enabled': True,
         'forecasting_enabled': True,
         'anomaly_detection_enabled': True,
@@ -1669,6 +1669,310 @@ def ai_settings():
     }
     
     return render_template('ai_settings.html', settings=settings)
+
+# Add these routes to your Flask app
+
+@app.route('/ai_insights')
+@login_required
+@manager_required
+def ai_insights():
+    return render_template('ai_insights.html')
+
+@app.route('/ai_anomaly_detection')
+@login_required
+@manager_required
+def ai_anomaly_detection():
+    return render_template('ai_anomaly_detection.html')
+
+@app.route('/ai_automated_reports')
+@login_required
+@manager_required
+def ai_automated_reports():
+    return render_template('ai_automated_reports.html')
+
+@app.route('/ai_predictive_inventory')
+@login_required
+@manager_required
+def ai_predictive_inventory():
+    return render_template('ai_predictive_inventory.html')
+
+@app.route('/ai_customer_segmentation')
+@login_required
+@manager_required
+def ai_customer_segmentation():
+    return render_template('ai_customer_segmentation.html')
+
+@app.route('/ai_marketing_recommendations')
+@login_required
+@manager_required
+def ai_marketing_recommendations():
+    return render_template('ai_marketing_recommendations.html')
+
+@app.route('/chatbot')
+@login_required
+def chatbot():
+    return render_template('chatbot.html')
+
+@app.route('/chatbot/message', methods=['POST'])
+@login_required
+def chatbot_message():
+    user_message = request.json.get('message')
+    
+    if not user_message:
+        return jsonify({"error": "No message provided"}), 400
+    
+    # Get context data based on the message
+    context = get_context_for_message(user_message)
+    
+    # Create the prompt for the AI
+    prompt = f"""
+    You are an AI assistant for a Point of Sale (POS) system. Your goal is to help the user with their business.
+    
+    User: {session['name']} (Role: {session['role']})
+    Date: {datetime.now().strftime('%Y-%m-%d')}
+    
+    Context:
+    {json.dumps(context, indent=2)}
+    
+    User message: {user_message}
+    
+    Please provide a helpful response. If the user is asking for data, format it clearly.
+    If the user is asking to perform an action, explain what you would do and ask for confirmation.
+    """
+    
+    try:
+        # Get response from OpenAI
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant for a POS system."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        ai_response = response.choices[0].message.content.strip()
+        
+        # Check if the response contains an action that needs confirmation
+        if "ACTION:" in ai_response:
+            # Extract the action and confirmation message
+            parts = ai_response.split("CONFIRMATION:")
+            if len(parts) > 1:
+                action = parts[0].replace("ACTION:", "").strip()
+                confirmation_message = parts[1].strip()
+                
+                return jsonify({
+                    "response": confirmation_message,
+                    "action": action,
+                    "requires_confirmation": True
+                })
+        
+        return jsonify({
+            "response": ai_response,
+            "requires_confirmation": False
+        })
+    
+    except Exception as e:
+        return jsonify({
+            "error": f"Sorry, I encountered an error: {str(e)}"
+        }), 500
+
+@app.route('/chatbot/execute-action', methods=['POST'])
+@login_required
+def execute_chatbot_action():
+    action = request.json.get('action')
+    
+    if not action:
+        return jsonify({"error": "No action provided"}), 400
+    
+    try:
+        # Parse the action and execute it
+        # This is a simplified example - in a real implementation, you would have a more robust action parser
+        
+        if "generate report" in action.lower():
+            # Generate a report
+            return jsonify({
+                "response": "Report generated successfully!",
+                "redirect": url_for('reports')
+            })
+            
+        elif "create promotion" in action.lower():
+            # Create a promotion
+            return jsonify({
+                "response": "Promotion created successfully!",
+                "redirect": url_for('settings')
+            })
+            
+        elif "send email" in action.lower():
+            # Send an email
+            return jsonify({
+                "response": "Email sent successfully!"
+            })
+            
+        else:
+            # Unknown action
+            return jsonify({
+                "error": f"Sorry, I don't know how to: {action}"
+            }), 400
+    
+    except Exception as e:
+        return jsonify({
+            "error": f"Error executing action: {str(e)}"
+        }), 500
+
+@app.route('/chatbot/voice', methods=['POST'])
+@login_required
+def chatbot_voice():
+    # In a real implementation, this would receive audio data and transcribe it
+    # For now, we'll just return a placeholder response
+    return jsonify({
+        "response": "Voice input would be processed here.",
+        "transcript": "This is a placeholder transcript."
+    })
+
+def get_context_for_message(message):
+    """Get relevant context data based on the user's message"""
+    context = {}
+    
+    # Convert message to lowercase for easier matching
+    message_lower = message.lower()
+    
+    # Check if the user is asking about sales
+    if any(word in message_lower for word in ['sales', 'revenue', 'income', 'today', 'yesterday', 'week', 'month']):
+        conn = get_db_connection()
+        
+        # Get today's sales
+        today = datetime.now().strftime('%Y-%m-%d')
+        today_sales = conn.execute("""
+        SELECT COUNT(id) as orders, SUM(total_amount) as sales
+        FROM orders
+        WHERE DATE(order_date) = ? AND status = 'completed'
+        """, (today,)).fetchone()
+        
+        context['today_sales'] = {
+            'orders': today_sales['orders'] if today_sales else 0,
+            'sales': today_sales['sales'] if today_sales else 0
+        }
+        
+        # Get yesterday's sales
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        yesterday_sales = conn.execute("""
+        SELECT COUNT(id) as orders, SUM(total_amount) as sales
+        FROM orders
+        WHERE DATE(order_date) = ? AND status = 'completed'
+        """, (yesterday,)).fetchone()
+        
+        context['yesterday_sales'] = {
+            'orders': yesterday_sales['orders'] if yesterday_sales else 0,
+            'sales': yesterday_sales['sales'] if yesterday_sales else 0
+        }
+        
+        # Get this week's sales
+        week_start = (datetime.now() - timedelta(days=datetime.now().weekday())).strftime('%Y-%m-%d')
+        week_sales = conn.execute("""
+        SELECT COUNT(id) as orders, SUM(total_amount) as sales
+        FROM orders
+        WHERE DATE(order_date) >= ? AND status = 'completed'
+        """, (week_start,)).fetchone()
+        
+        context['week_sales'] = {
+            'orders': week_sales['orders'] if week_sales else 0,
+            'sales': week_sales['sales'] if week_sales else 0
+        }
+        
+        # Get this month's sales
+        month_start = datetime.now().replace(day=1).strftime('%Y-%m-%d')
+        month_sales = conn.execute("""
+        SELECT COUNT(id) as orders, SUM(total_amount) as sales
+        FROM orders
+        WHERE DATE(order_date) >= ? AND status = 'completed'
+        """, (month_start,)).fetchone()
+        
+        context['month_sales'] = {
+            'orders': month_sales['orders'] if month_sales else 0,
+            'sales': month_sales['sales'] if month_sales else 0
+        }
+        
+        conn.close()
+    
+    # Check if the user is asking about inventory
+    if any(word in message_lower for word in ['inventory', 'stock', 'product', 'low', 'out']):
+        conn = get_db_connection()
+        
+        # Get low stock products
+        low_stock = conn.execute("""
+        SELECT id, name, stock, min_stock FROM products
+        WHERE stock <= min_stock AND active = 1
+        ORDER BY stock
+        LIMIT 10
+        """).fetchall()
+        
+        context['low_stock'] = [dict(row) for row in low_stock]
+        
+        # Get out of stock products
+        out_of_stock = conn.execute("""
+        SELECT id, name FROM products
+        WHERE stock = 0 AND active = 1
+        ORDER BY name
+        LIMIT 10
+        """).fetchall()
+        
+        context['out_of_stock'] = [dict(row) for row in out_of_stock]
+        
+        # Get total inventory value
+        inventory_value = conn.execute("""
+        SELECT SUM(stock * price) as value
+        FROM products
+        WHERE active = 1
+        """).fetchone()
+        
+        context['inventory_value'] = inventory_value['value'] if inventory_value and inventory_value['value'] else 0
+        
+        conn.close()
+    
+    # Check if the user is asking about customers
+    if any(word in message_lower for word in ['customer', 'customers', 'best', 'loyalty']):
+        conn = get_db_connection()
+        
+        # Get top customers by spending
+        top_customers = conn.execute("""
+        SELECT c.id, c.name, COUNT(o.id) as orders, SUM(o.total_amount) as total_spent
+        FROM customers c
+        JOIN orders o ON c.id = o.customer_id
+        GROUP BY c.id
+        ORDER BY total_spent DESC
+        LIMIT 10
+        """).fetchall()
+        
+        context['top_customers'] = [dict(row) for row in top_customers]
+        
+        # Get customers with high loyalty points
+        loyal_customers = conn.execute("""
+        SELECT id, name, loyalty_points FROM customers
+        ORDER BY loyalty_points DESC
+        LIMIT 10
+        """).fetchall()
+        
+        context['loyal_customers'] = [dict(row) for row in loyal_customers]
+        
+        conn.close()
+    
+    # Check if the user is asking about orders
+    if any(word in message_lower for word in ['order', 'orders', 'recent']):
+        conn = get_db_connection()
+        
+        # Get recent orders
+        recent_orders = conn.execute("""
+        SELECT id, order_number, order_date, total_amount, status
+        FROM orders
+        ORDER BY order_date DESC
+        LIMIT 10
+        """).fetchall()
+        
+        context['recent_orders'] = [dict(row) for row in recent_orders]
+        
+        conn.close()
+    
+    return context
 
 
 @app.route('/reports/sales')
@@ -1962,9 +2266,24 @@ def settings():
     SELECT * FROM business_settings LIMIT 1
     """).fetchone()
     
+    # Convert the row to a dictionary for easier access
+    settings_dict = dict(settings) if settings else {}
+    
+    # Add AI settings (in a real implementation, these would be stored in the database)
+    settings_dict.update({
+        # 'n8n_webhook_url': N8N_WEBHOOK_URL,
+        # 'n8n_api_key': N8N_API_KEY,
+        'ai_enabled': True,
+        'forecasting_enabled': True,
+        'anomaly_detection_enabled': True,
+        'automated_reports_enabled': True,
+        'predictive_inventory_enabled': True,
+        'voice_commands_enabled': True
+    })
+    
     conn.close()
     
-    return render_template('settings.html', settings=settings)
+    return render_template('settings.html', settings=settings_dict)
 
 @app.route('/settings/save', methods=['POST'])
 @login_required

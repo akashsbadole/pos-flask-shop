@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}AI Anomaly Detection - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">AI Anomaly Detection</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button class="btn btn-sm btn-outline-secondary" id="refreshAnomaliesBtn">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Detected Anomalies</h6>
+            </div>
+            <div class="card-body">
+                <div id="anomaliesContent">
+                    <p class="text-center">Running anomaly detection...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Anomaly Detection Settings</h6>
+            </div>
+            <div class="card-body">
+                <form id="anomalySettingsForm">
+                    <div class="mb-3">
+                        <label for="sensitivity" class="form-label">Detection Sensitivity</label>
+                        <select class="form-select" id="sensitivity">
+                            <option value="low">Low - Fewer false positives</option>
+                            <option value="medium" selected>Medium - Balanced</option>
+                            <option value="high">High - Catch more anomalies</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notificationMethod" class="form-label">Notification Method</label>
+                        <select class="form-select" id="notificationMethod">
+                            <option value="dashboard">Dashboard Only</option>
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                            <option value="all">All Methods</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoDetectSales" checked>
+                            <label class="form-check-label" for="autoDetectSales">
+                                Detect Sales Anomalies
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoDetectInventory" checked>
+                            <label class="form-check-label" for="autoDetectInventory">
+                                Detect Inventory Anomalies
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoDetectCustomers" checked>
+                            <label class="form-check-label" for="autoDetectCustomers">
+                                Detect Customer Behavior Anomalies
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" onclick="saveAnomalySettings()">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Anomaly History</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2023-06-15</td>
+                                <td>Sales Drop</td>
+                                <td><span class="badge bg-warning">Medium</span></td>
+                                <td><span class="badge bg-success">Addressed</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">View Details</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2023-06-10</td>
+                                <td>Inventory Spike</td>
+                                <td><span class="badge bg-info">Low</span></td>
+                                <td><span class="badge bg-secondary">Ignored</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">View Details</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2023-06-05</td>
+                                <td>Unusual Customer Activity</td>
+                                <td><span class="badge bg-danger">High</span></td>
+                                <td><span class="badge bg-success">Addressed</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">View Details</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Load anomalies
+        loadAnomalies();
+        
+        // Refresh anomalies
+        $('#refreshAnomaliesBtn').click(function() {
+            loadAnomalies();
+        });
+        
+        function loadAnomalies() {
+            $('#anomaliesContent').html('<p class="text-center">Detecting anomalies...</p>');
+            
+            setTimeout(function() {
+                $('#anomaliesContent').html(`
+                    <div class="accordion" id="anomalyAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading1">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+                                    <span class="badge bg-danger me-2">High</span>
+                                    Sales Anomaly - Unusual Drop in Revenue
+                                </button>
+                            </h2>
+                            <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="heading1" data-bs-parent="#anomalyAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Date:</strong> 2023-06-15</p>
+                                    <p><strong>Details:</strong> Sales dropped by 40% compared to the same day last week.</p>
+                                    <p><strong>Potential Impact:</strong> Revenue loss of approximately ₹8,000</p>
+                                    <p><strong>Recommended Actions:</strong></p>
+                                    <ul>
+                                        <li>Check if there were any external factors (weather, events, etc.)</li>
+                                        <li>Review marketing campaigns and promotions</li>
+                                        <li>Consider running a special promotion to boost sales</li>
+                                    </ul>
+                                    <div class="mt-3">
+                                        <button class="btn btn-sm btn-primary" onclick="markAnomalyAsAddressed(1)">Mark as Addressed</button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="ignoreAnomaly(1)">Ignore</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+                                    <span class="badge bg-warning me-2">Medium</span>
+                                    Inventory Anomaly - Unusual Stock Movement
+                                </button>
+                            </h2>
+                            <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="heading2" data-bs-parent="#anomalyAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Date:</strong> 2023-06-10</p>
+                                    <p><strong>Details:</strong> Stock for Product A increased by 200% without any corresponding sales.</p>
+                                    <p><strong>Potential Impact:</strong> Potential inventory discrepancy or data entry error</p>
+                                    <p><strong>Recommended Actions:</strong></p>
+                                    <ul>
+                                        <li>Verify inventory count</li>
+                                        <li>Check for data entry errors</li>
+                                        <li>Investigate potential theft or loss</li>
+                                    </ul>
+                                    <div class="mt-3">
+                                        <button class="btn btn-sm btn-primary" onclick="markAnomalyAsAddressed(2)">Mark as Addressed</button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="ignoreAnomaly(2)">Ignore</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `);
+            }, 1500);
+        }
+        
+        function markAnomalyAsAddressed(anomalyId) {
+            // In a real implementation, this would send a request to the server
+            alert('Anomaly marked as addressed');
+            
+            // Update UI
+            $(`#heading${anomalyId} .badge`).removeClass('bg-danger bg-warning bg-info').addClass('bg-success');
+            $(`#heading${anomalyId} button`).text('Sales Anomaly - Unusual Drop in Revenue (Addressed)');
+        }
+        
+        function ignoreAnomaly(anomalyId) {
+            // In a real implementation, this would send a request to the server
+            alert('Anomaly ignored');
+            
+            // Update UI
+            $(`#heading${anomalyId} .badge`).removeClass('bg-danger bg-warning bg-info').addClass('bg-secondary');
+            $(`#heading${anomalyId} button`).text('Sales Anomaly - Unusual Drop in Revenue (Ignored)');
+        }
+        
+        function saveAnomalySettings() {
+            // In a real implementation, this would send the settings to the server
+            alert('Settings saved successfully');
+        }
+    });
+</script>
+{% endblock %}

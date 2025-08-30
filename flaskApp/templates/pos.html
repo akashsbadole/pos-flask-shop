@@ -226,6 +226,7 @@
     $(document).ready(function() {
         let cart = [];
         let selectedCategory = '';
+        let total = 0; // Declare total here
         
         // Load products
         function loadProducts(categoryId = '', search = '') {
@@ -383,6 +384,7 @@
                     $('#cartSubtotal').text(`₹${data.subtotal.toFixed(2)}`);
                     $('#cartTax').text(`₹${data.tax.toFixed(2)}`);
                     $('#cartTotal').text(`₹${data.total.toFixed(2)}`);
+                    total = data.total; // Update total here
                     
                     // Update change amount if cash payment
                     if ($('#paymentCash').is(':checked')) {

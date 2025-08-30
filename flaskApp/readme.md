@@ -55,3 +55,10 @@ Access the web application at http://localhost:5000
 - Shift management
 - Settings management
 - Both applications use the same SQLite database, allowing for seamless data sharing between the desktop and web versions. The system is designed to be intuitive and user-friendly, with a focus on the needs of small-scale businesses like restaurants, retail shops, and cafes.
+
+### local running
+
+`c:\users\akash\appdata\local\programs\python\python310\python.exe app.py
+
+- Serving Flask app 'app'
+- Debug mode: on`

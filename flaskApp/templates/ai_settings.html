@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}AI Settings - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">AI Settings</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" action="{{ url_for('ai_settings') }}">
+            <div class="mb-3">
+                <label for="n8nWebhookUrl" class="form-label">n8n Webhook URL</label>
+                <input type="text" class="form-control" id="n8nWebhookUrl" name="n8n_webhook_url" value="{{ settings.n8n_webhook_url }}">
+            </div>
+            
+            <div class="mb-3">
+                <label for="n8nApiKey" class="form-label">n8n API Key</label>
+                <input type="password" class="form-control" id="n8nApiKey" name="n8n_api_key" value="{{ settings.n8n_api_key }}">
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="aiEnabled" name="ai_enabled" {{ 'checked' if settings.ai_enabled else '' }}>
+                <label class="form-check-label" for="aiEnabled">
+                    Enable AI Features
+                </label>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="forecastingEnabled" name="forecasting_enabled" {{ 'checked' if settings.forecasting_enabled else '' }}>
+                <label class="form-check-label" for="forecastingEnabled">
+                    Enable Sales Forecasting
+                </label>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="anomalyDetectionEnabled" name="anomaly_detection_enabled" {{ 'checked' if settings.anomaly_detection_enabled else '' }}>
+                <label class="form-check-label" for="anomalyDetectionEnabled">
+                    Enable Anomaly Detection
+                </label>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="automatedReportsEnabled" name="automated_reports_enabled" {{ 'checked' if settings.automated_reports_enabled else '' }}>
+                <label class="form-check-label" for="automatedReportsEnabled">
+                    Enable Automated Reports
+                </label>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="predictiveInventoryEnabled" name="predictive_inventory_enabled" {{ 'checked' if settings.predictive_inventory_enabled else '' }}>
+                <label class="form-check-label" for="predictiveInventoryEnabled">
+                    Enable Predictive Inventory
+                </label>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="voiceCommandsEnabled" name="voice_commands_enabled" {{ 'checked' if settings.voice_commands_enabled else '' }}>
+                <label class="form-check-label" for="voiceCommandsEnabled">
+                    Enable Voice Commands
+                </label>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
