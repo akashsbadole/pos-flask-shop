@@ -174,7 +174,16 @@
         </div>
     </div>
 </div>
-
+<!-- Add this to the payment panel in pos.html -->
+<div class="mb-3">
+    <label class="form-label">Invoice Template</label>
+    <select class="form-select" id="invoiceTemplate">
+        <option value="default">Default</option>
+        <option value="restaurant">Restaurant</option>
+        <option value="retail">Retail Shop</option>
+        <option value="supermarket">Supermarket</option>
+    </select>
+</div>
 <!-- New Customer Modal -->
 <div class="modal fade" id="newCustomerModal" tabindex="-1" aria-labelledby="newCustomerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -536,5 +545,63 @@
             });
         });
     });
+
+    // Update the checkout button click handler
+$('#checkoutBtn').click(function() {
+    if (cart.length === 0) {
+        alert('Cart is empty');
+        return;
+    }
+    
+    let customer_id = $('#customerSelect').val();
+    let payment_method = $('input[name="paymentMethod"]:checked').val();
+    let cash_amount = $('#cashAmount').val();
+    let discount = $('#discountAmount').val();
+    let discount_type = $('#discountType').val();
+    let template_type = $('#invoiceTemplate').val();
+    
+    // Validate cash payment
+    if (payment_method === 'Cash' && parseFloat(cash_amount) < total) {
+        alert('Cash amount is less than total');
+        return;
+    }
+    
+    // Send to server
+    $.ajax({
+        url: '/api/checkout',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            customer_id: customer_id,
+            payment_method: payment_method,
+            cash_amount: cash_amount,
+            discount: discount,
+            discount_type: discount_type,
+            template_type: template_type
+        }),
+        success: function(response) {
+            if (response.success) {
+                // Open invoice in new window
+                window.open('/invoice/' + response.order_id + '/' + response.template_type, '_blank');
+                
+                // Clear cart
+                cart = [];
+                updateCartDisplay();
+                
+                // Reset payment fields
+                $('#cashAmount').val('');
+                $('#discountAmount').val('0');
+                
+                // Show success message
+                alert('Order ' + response.order_number + ' completed successfully');
+            } else {
+                alert(response.error);
+            }
+        },
+        error: function() {
+            alert('Error processing payment');
+        }
+    });
+});
 </script>
 {% endblock %}

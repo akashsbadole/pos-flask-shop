@@ -676,16 +676,17 @@ def api_calculate_totals():
 @login_required
 def api_checkout():
     if 'cart' not in session or not session['cart']:
-        return jsonify({'error': 'Cart is empty'}), 400
+        return jsonify({"error": "Cart is empty"}), 400
     
     customer_id = request.json.get('customer_id')
     payment_method = request.json.get('payment_method')
     cash_amount = request.json.get('cash_amount', 0)
     discount = request.json.get('discount', 0)
     discount_type = request.json.get('discount_type', 'fixed')
+    template_type = request.json.get('template_type', 'default')
     
     if not payment_method:
-        return jsonify({'error': 'Payment method is required'}), 400
+        return jsonify({"error": "Payment method is required"}), 400
     
     # Calculate totals
     subtotal = 0
@@ -708,22 +709,22 @@ def api_checkout():
     
     # Validate cash payment
     if payment_method == 'Cash' and float(cash_amount) < total:
-        return jsonify({'error': 'Cash amount is less than total'}), 400
+        return jsonify({"error": "Cash amount is less than total"}), 400
     
     # Generate order number
     order_number = f"ORD-{datetime.datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8]}"
     
     # Create order in database
     conn = get_db_connection()
+    cursor = conn.cursor()
     
     try:
-        # Insert order
-        cursor = conn.execute("""
+        cursor.execute("""
         INSERT INTO orders (
             order_number, user_id, customer_id, status, 
             order_date, total_amount, tax_amount, discount_amount, 
             payment_method, payment_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             order_number, 
             session['user_id'], 
@@ -741,7 +742,7 @@ def api_checkout():
         
         # Insert order items and update stock
         for item in session['cart']:
-            conn.execute("""
+            cursor.execute("""
             INSERT INTO order_items (
                 order_id, product_id, quantity, price, tax_rate
             ) VALUES (?, ?, ?, ?, ?)
@@ -754,7 +755,7 @@ def api_checkout():
             ))
             
             # Update product stock
-            conn.execute("""
+            cursor.execute("""
             UPDATE products SET stock = stock - ? WHERE id = ?
             """, (item['quantity'], item['id']))
         
@@ -764,19 +765,20 @@ def api_checkout():
         session['cart'] = []
         session.modified = True
         
+        # Return success response with order details and template type
         return jsonify({
-            'success': True,
-            'order_id': order_id,
-            'order_number': order_number
+            "success": True,
+            "order_id": order_id,
+            "order_number": order_number,
+            "template_type": template_type
         })
     
     except Exception as e:
         conn.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
     
     finally:
         conn.close()
-
 @app.route('/orders')
 @login_required
 def orders():
@@ -1621,7 +1623,53 @@ def number_to_words(num):
 @login_required
 @manager_required
 def reports():
-    return render_template('reports.html')
+    from datetime import timedelta
+    now = datetime.now().strftime('%Y-%m-%d')
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    
+    return render_template(
+        'reports.html',
+        now=now,
+        thirty_days_ago=thirty_days_ago
+    )
+
+
+@app.route('/ai_settings', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def ai_settings():
+    if request.method == 'POST':
+        # Update AI settings
+        settings = {
+            'n8n_webhook_url': request.form.get('n8n_webhook_url'),
+            'n8n_api_key': request.form.get('n8n_api_key'),
+            'ai_enabled': 'ai_enabled' in request.form,
+            'forecasting_enabled': 'forecasting_enabled' in request.form,
+            'anomaly_detection_enabled': 'anomaly_detection_enabled' in request.form,
+            'automated_reports_enabled': 'automated_reports_enabled' in request.form,
+            'predictive_inventory_enabled': 'predictive_inventory_enabled' in request.form,
+            'voice_commands_enabled': 'voice_commands_enabled' in request.form
+        }
+        
+        # In a real implementation, these settings would be saved to the database
+        # For now, we'll just show a success message
+        flash('AI settings updated successfully', 'success')
+        return redirect(url_for('settings'))
+    
+    # Get current settings (in a real implementation, these would be from the database)
+    settings = {
+        'n8n_webhook_url': N8N_WEBHOOK_URL,
+        'n8n_api_key': N8N_API_KEY,
+        'ai_enabled': True,
+        'forecasting_enabled': True,
+        'anomaly_detection_enabled': True,
+        'automated_reports_enabled': True,
+        'predictive_inventory_enabled': True,
+        'voice_commands_enabled': True
+    }
+    
+    return render_template('ai_settings.html', settings=settings)
+
 
 @app.route('/reports/sales')
 @login_required

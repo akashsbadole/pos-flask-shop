@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Shifts - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Shift Management</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            {% if not current_shift %}
+            <a href="{{ url_for('open_shift') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-plus-circle"></i> Open Shift
+            </a>
+            {% else %}
+            <a href="{{ url_for('close_shift') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Close Shift
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if current_shift %}
+<div class="alert alert-info">
+    <strong>Current Shift:</strong> Started at {{ current_shift.start_time }} with opening cash of ₹{{ "%.2f"|format(current_shift.opening_cash) }}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Opening Cash</th>
+                        <th>Closing Cash</th>
+                        <th>Difference</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift in shifts %}
+                    <tr>
+                        <td>{{ shift.id }}</td>
+                        <td>{{ shift.user_name }}</td>
+                        <td>{{ shift.start_time }}</td>
+                        <td>{{ shift.end_time or 'N/A' }}</td>
+                        <td>₹{{ "%.2f"|format(shift.opening_cash) }}</td>
+                        <td>₹{{ "%.2f"|format(shift.closing_cash) if shift.closing_cash else 'N/A' }}</td>
+                        <td>
+                            {% if shift.difference is not none %}
+                                <span class="text-{{ 'success' if shift.difference >= 0 else 'danger' }}">
+                                    ₹{{ "%.2f"|format(shift.difference) }}
+                                </span>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if shift.status == 'closed' else 'warning' }}">
+                                {{ shift.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view_shift', shift_id=shift.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center">No shifts found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

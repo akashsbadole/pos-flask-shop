@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Close Shift - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Close Shift</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('shifts') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Shifts
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Shift Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Shift Started:</strong> {{ current_shift.start_time }}</p>
+                <p><strong>Opening Cash:</strong> ₹{{ "%.2f"|format(current_shift.opening_cash) }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Orders:</strong> {{ sales_data.orders or 0 }}</p>
+                <p><strong>Cash Sales:</strong> ₹{{ "%.2f"|format(sales_data.cash_sales or 0) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label for="closing_cash" class="form-label">Closing Cash Amount *</label>
+                <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" class="form-control" id="closing_cash" name="closing_cash" step="0.01" min="0" value="{{ expected_cash }}" required>
+                </div>
+                <div class="form-text">Expected closing cash: ₹{{ "%.2f"|format(expected_cash) }}</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('shifts') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Close Shift</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

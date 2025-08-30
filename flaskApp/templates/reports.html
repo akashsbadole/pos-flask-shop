@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Reports</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up fs-1 text-primary"></i>
+                <h5 class="card-title">Sales Summary</h5>
+                <p class="card-text">View daily, weekly, and monthly sales reports.</p>
+                <a href="{{ url_for('sales_report') }}" class="btn btn-primary">View Report</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-tags fs-1 text-success"></i>
+                <h5 class="card-title">Sales by Category</h5>
+                <p class="card-text">Analyze sales performance by product category.</p>
+                <a href="{{ url_for('category_report') }}" class="btn btn-success">View Report</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-box-seam fs-1 text-warning"></i>
+                <h5 class="card-title">Product Performance</h5>
+                <p class="card-text">Identify best-selling and underperforming products.</p>
+                <a href="{{ url_for('product_report') }}" class="btn btn-warning">View Report</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-credit-card fs-1 text-info"></i>
+                <h5 class="card-title">Payment Methods</h5>
+                <p class="card-text">Analyze payment method usage and trends.</p>
+                <a href="{{ url_for('payment_report') }}" class="btn btn-info">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Generate Custom Report</h5>
+    </div>
+    <div class="card-body">
+        <form id="customReportForm">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="reportType" class="form-label">Report Type</label>
+                    <select class="form-select" id="reportType" name="reportType">
+                        <option value="sales">Sales Summary</option>
+                        <option value="category">Sales by Category</option>
+                        <option value="product">Product Performance</option>
+                        <option value="payment">Payment Methods</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="exportFormat" class="form-label">Export Format</label>
+                    <select class="form-select" id="exportFormat" name="exportFormat">
+                        <option value="view">View Online</option>
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="fromDate" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="fromDate" name="fromDate" value="{{ (now - timedelta(days=30)).strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="toDate" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="toDate" name="toDate" value="{{ now.strftime('%Y-%m-%d') }}">
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">Generate Report</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#customReportForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var reportType = $('#reportType').val();
+            var exportFormat = $('#exportFormat').val();
+            var fromDate = $('#fromDate').val();
+            var toDate = $('#toDate').val();
+            
+            // Build URL based on selections
+            var url = '';
+            
+            if (reportType === 'sales') {
+                url = '{{ url_for("sales_report") }}';
+            } else if (reportType === 'category') {
+                url = '{{ url_for("category_report") }}';
+            } else if (reportType === 'product') {
+                url = '{{ url_for("product_report") }}';
+            } else if (reportType === 'payment') {
+                url = '{{ url_for("payment_report") }}';
+            }
+            
+            // Add date parameters
+            url += '?from_date=' + fromDate + '&to_date=' + toDate;
+            
+            if (exportFormat === 'csv') {
+                // For CSV export, we would typically add an export parameter
+                // For now, we'll just view the report
+            } else if (exportFormat === 'excel') {
+                // For Excel export, we would typically add an export parameter
+                // For now, we'll just view the report
+            } else if (exportFormat === 'pdf') {
+                // For PDF export, we would typically add an export parameter
+                // For now, we'll just view the report
+            }
+            
+            // Navigate to the report page
+            window.location.href = url;
+        });
+    });
+</script>
+{% endblock %}

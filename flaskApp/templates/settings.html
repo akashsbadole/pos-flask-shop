@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Business Settings</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Business Name *</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ settings.name }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <textarea class="form-control" id="address" name="address" rows="2">{{ settings.address or '' }}</textarea>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="phone" class="form-label">Phone</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ settings.phone or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ settings.email or '' }}">
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="tax_id" class="form-label">Tax ID</label>
+                    <input type="text" class="form-control" id="tax_id" name="tax_id" value="{{ settings.tax_id or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="currency" class="form-label">Currency</label>
+                    <select class="form-select" id="currency" name="currency">
+                        <option value="₹" {% if settings.currency == '₹' %}selected{% endif %}>₹ (Indian Rupee)</option>
+                        <option value="$" {% if settings.currency == '$' %}selected{% endif %}>$ (US Dollar)</option>
+                        <option value="€" {% if settings.currency == '€' %}selected{% endif %}>€ (Euro)</option>
+                        <option value="£" {% if settings.currency == '£' %}selected{% endif %}>£ (British Pound)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="receipt_footer" class="form-label">Receipt Footer</label>
+                <textarea class="form-control" id="receipt_footer" name="receipt_footer" rows="2">{{ settings.receipt_footer or '' }}</textarea>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="tax_inclusive" name="tax_inclusive" {% if settings.tax_inclusive %}checked{% endif %}>
+                    <label class="form-check-label" for="tax_inclusive">
+                        Tax Inclusive Pricing
+                    </label>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">AI Settings</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('ai_settings') }}">
+            <div class="mb-3">
+                <label for="n8n_webhook_url" class="form-label">n8n Webhook URL</label>
+                <input type="url" class="form-control" id="n8n_webhook_url" name="n8n_webhook_url" value="{{ settings.n8n_webhook_url or '' }}">
+            </div>
+            
+            <div class="mb-3">
+                <label for="n8n_api_key" class="form-label">n8n API Key</label>
+                <input type="text" class="form-control" id="n8n_api_key" name="n8n_api_key" value="{{ settings.n8n_api_key or '' }}">
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="ai_enabled" name="ai_enabled" {% if settings.ai_enabled %}checked{% endif %}>
+                    <label class="form-check-label" for="ai_enabled">
+                        Enable AI Features
+                    </label>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">Save AI Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

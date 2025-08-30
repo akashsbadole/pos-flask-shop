@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Report - POS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Sales Report</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('reports') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Reports
+            </a>
+            <a href="{{ url_for('export_sales_report', from_date=from_date, to_date=to_date) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download"></i> Export CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="fromDate" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="fromDate" name="from_date" value="{{ from_date }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="toDate" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="toDate" name="to_date" value="{{ to_date }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Sales Summary ({{ from_date }} to {{ to_date }})</h5>
+        
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Orders</th>
+                        <th>Sales</th>
+                        <th>Tax</th>
+                        <th>Discount</th>
+                        <th>Net Sales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in daily_sales %}
+                    <tr>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.orders }}</td>
+                        <td>₹{{ "%.2f"|format(day.sales) }}</td>
+                        <td>₹{{ "%.2f"|format(day.tax) }}</td>
+                        <td>₹{{ "%.2f"|format(day.discount) }}</td>
+                        <td>₹{{ "%.2f"|format(day.net_sales) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>TOTAL</strong></td>
+                        <td><strong>{{ totals.orders }}</strong></td>
+                        <td><strong>₹{{ "%.2f"|format(totals.sales) }}</strong></td>
+                        <td><strong>₹{{ "%.2f"|format(totals.tax) }}</strong></td>
+                        <td><strong>₹{{ "%.2f"|format(totals.discount) }}</strong></td>
+                        <td><strong>₹{{ "%.2f"|format(totals.net_sales) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Sales Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Orders Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ordersChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // Prepare data for charts
+        var dates = [];
+        var salesData = [];
+        var ordersData = [];
+        
+        {% for day in daily_sales %}
+        dates.push('{{ day.date }}');
+        salesData.push({{ day.sales }});
+        ordersData.push({{ day.orders }});
+        {% endfor %}
+        
+        // Sales Chart
+        var salesCtx = document.getElementById('salesChart').getContext('2d');
+        var salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Sales (₹)',
+                    data: salesData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Orders Chart
+        var ordersCtx = document.getElementById('ordersChart').getContext('2d');
+        var ordersChart = new Chart(ordersCtx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Orders',
+                    data: ordersData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
