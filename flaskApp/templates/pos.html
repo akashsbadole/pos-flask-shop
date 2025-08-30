@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+
+{% block title %}Point of Sale - POS System{% endblock %}
+
+{% block head %}
+<style>
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    .product-card {
+        cursor: pointer;
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+    }
+    .cart-item {
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem 0;
+    }
+    .cart-item:last-child {
+        border-bottom: none;
+    }
+    .cart-summary {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1rem;
+    }
+    .category-btn {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    .category-btn.active {
+        background-color: #007bff;
+        color: white;
+    }
+    .payment-method {
+        margin-bottom: 10px;
+    }
+    .payment-method input[type="radio"] {
+        margin-right: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Point of Sale</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearCartBtn">Clear Cart</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="holdOrderBtn">Hold Order</button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h6 class="m-0 font-weight-bold">Products</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search products..." id="productSearch">
+                            <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <button class="btn btn-sm btn-outline-primary category-btn active" data-category-id="">All</button>
+                    {% for category in categories %}
+                    <button class="btn btn-sm btn-outline-primary category-btn" data-category-id="{{ category.id }}">{{ category.name }}</button>
+                    {% endfor %}
+                </div>
+                <div class="product-grid" id="productGrid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Cart</h6>
+            </div>
+            <div class="card-body">
+                <div id="cartItems">
+                    <p class="text-center text-muted">Cart is empty</p>
+                </div>
+                <div class="cart-summary mt-3" id="cartSummary" style="display: none;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Subtotal:</span>
+                        <span id="cartSubtotal">₹0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Tax:</span>
+                        <span id="cartTax">₹0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Discount:</span>
+                        <span id="cartDiscount">₹0.00</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <strong id="cartTotal">₹0.00</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Customer</label>
+                        <select class="form-select" id="customerSelect">
+                            <option value="">Walk-in Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary mt-1" id="newCustomerBtn">New Customer</button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <div class="payment-method">
+                            <div>
+                                <input type="radio" id="paymentCash" name="paymentMethod" value="Cash" checked>
+                                <label for="paymentCash">Cash</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
+                                <label for="paymentCard">Card</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI">
+                                <label for="paymentUPI">UPI</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="paymentMobile" name="paymentMethod" value="Mobile Pay">
+                                <label for="paymentMobile">Mobile Pay</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="cashAmountDiv">
+                        <label class="form-label">Cash Amount</label>
+                        <input type="number" class="form-control" id="cashAmount" step="0.01" min="0">
+                        <div class="form-text" id="changeAmount">Change: ₹0.00</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Discount</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="discountAmount" step="0.01" min="0" value="0">
+                            <select class="form-select" id="discountType" style="max-width: 100px;">
+                                <option value="fixed">₹</option>
+                                <option value="percentage">%</option>
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">Apply</button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" id="checkoutBtn">Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Customer Modal -->
+<div class="modal fade" id="newCustomerModal" tabindex="-1" aria-labelledby="newCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newCustomerModalLabel">New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newCustomerForm">
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Name *</label>
+                        <input type="text" class="form-control" id="customerName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="customerEmail">
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerPhone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="customerPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerAddress" class="form-label">Address</label>
+                        <textarea class="form-control" id="customerAddress" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveCustomerBtn">Save Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        let cart = [];
+        let selectedCategory = '';
+        
+        // Load products
+        function loadProducts(categoryId = '', search = '') {
+            $.ajax({
+                url: '/api/products',
+                type: 'GET',
+                data: {
+                    category_id: categoryId,
+                    search: search
+                },
+                success: function(data) {
+                    let productGrid = $('#productGrid');
+                    productGrid.empty();
+                    
+                    if (data.length === 0) {
+                        productGrid.html('<p class="text-center text-muted">No products found</p>');
+                        return;
+                    }
+                    
+                    data.forEach(product => {
+                        let productCard = `
+                            <div class="card product-card" data-product-id="${product.id}">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">${product.name}</h6>
+                                    <p class="card-text">₹${parseFloat(product.price).toFixed(2)}</p>
+                                    <p class="card-text"><small class="text-muted">Stock: ${product.stock}</small></p>
+                                    <button class="btn btn-sm btn-primary add-to-cart-btn" data-product-id="${product.id}">Add to Cart</button>
+                                </div>
+                            </div>
+                        `;
+                        productGrid.append(productCard);
+                    });
+                    
+                    // Add click event to product cards
+                    $('.add-to-cart-btn').click(function() {
+                        let productId = $(this).data('product-id');
+                        addToCart(productId);
+                    });
+                }
+            });
+        }
+        
+        // Initial load
+        loadProducts();
+        
+        // Category filter
+        $('.category-btn').click(function() {
+            $('.category-btn').removeClass('active');
+            $(this).addClass('active');
+            selectedCategory = $(this).data('category-id');
+            loadProducts(selectedCategory, $('#productSearch').val());
+        });
+        
+        // Search products
+        $('#searchBtn').click(function() {
+            loadProducts(selectedCategory, $('#productSearch').val());
+        });
+        
+        $('#productSearch').on('keypress', function(e) {
+            if (e.which === 13) {
+                loadProducts(selectedCategory, $(this).val());
+            }
+        });
+        
+        // Add to cart
+        function addToCart(productId, quantity = 1) {
+            $.ajax({
+                url: '/api/add_to_cart',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    product_id: productId,
+                    quantity: quantity
+                }),
+                success: function(data) {
+                    if (data.success) {
+                        cart = data.cart;
+                        updateCartDisplay();
+                        updateCartTotals();
+                    } else {
+                        alert(data.error);
+                    }
+                }
+            });
+        }
+        
+        // Update cart display
+        function updateCartDisplay() {
+            let cartItems = $('#cartItems');
+            let cartSummary = $('#cartSummary');
+            
+            if (cart.length === 0) {
+                cartItems.html('<p class="text-center text-muted">Cart is empty</p>');
+                cartSummary.hide();
+                return;
+            }
+            
+            cartItems.empty();
+            cartSummary.show();
+            
+            cart.forEach(item => {
+                let cartItem = `
+                    <div class="cart-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">${item.name}</div>
+                                <small>₹${parseFloat(item.price).toFixed(2)} x ${item.quantity}</small>
+                            </div>
+                            <div>
+                                <span class="me-2">₹${(item.price * item.quantity).toFixed(2)}</span>
+                                <button class="btn btn-sm btn-outline-danger remove-from-cart-btn" data-product-id="${item.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                cartItems.append(cartItem);
+            });
+            
+            // Add remove event
+            $('.remove-from-cart-btn').click(function() {
+                let productId = $(this).data('product-id');
+                removeFromCart(productId);
+            });
+        }
+        
+        // Remove from cart
+        function removeFromCart(productId) {
+            $.ajax({
+                url: '/api/remove_from_cart',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    product_id: productId
+                }),
+                success: function(data) {
+                    if (data.success) {
+                        cart = data.cart;
+                        updateCartDisplay();
+                        updateCartTotals();
+                    } else {
+                        alert(data.error);
+                    }
+                }
+            });
+        }
+        
+        // Update cart totals
+        function updateCartTotals() {
+            $.ajax({
+                url: '/api/calculate_totals',
+                type: 'GET',
+                success: function(data) {
+                    $('#cartSubtotal').text(`₹${data.subtotal.toFixed(2)}`);
+                    $('#cartTax').text(`₹${data.tax.toFixed(2)}`);
+                    $('#cartTotal').text(`₹${data.total.toFixed(2)}`);
+                    
+                    // Update change amount if cash payment
+                    if ($('#paymentCash').is(':checked')) {
+                        updateChangeAmount();
+                    }
+                }
+            });
+        }
+        
+        // Clear cart
+        $('#clearCartBtn').click(function() {
+            if (confirm('Are you sure you want to clear the cart?')) {
+                $.ajax({
+                    url: '/api/clear_cart',
+                    type: 'POST',
+                    success: function(data) {
+                        if (data.success) {
+                            cart = [];
+                            updateCartDisplay();
+                            updateCartTotals();
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Hold order
+        $('#holdOrderBtn').click(function() {
+            if (cart.length === 0) {
+                alert('Cart is empty');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to hold this order?')) {
+                // In a real implementation, this would save the order as held
+                alert('Order held successfully');
+                
+                // Clear cart
+                $.ajax({
+                    url: '/api/clear_cart',
+                    type: 'POST',
+                    success: function(data) {
+                        if (data.success) {
+                            cart = [];
+                            updateCartDisplay();
+                            updateCartTotals();
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Payment method change
+        $('input[name="paymentMethod"]').change(function() {
+            if ($(this).val() === 'Cash') {
+                $('#cashAmountDiv').show();
+            } else {
+                $('#cashAmountDiv').hide();
+            }
+        });
+        
+        // Update change amount
+        function updateChangeAmount() {
+            let cashAmount = parseFloat($('#cashAmount').val()) || 0;
+            let total = parseFloat($('#cartTotal').text().replace('₹', '')) || 0;
+            let change = cashAmount - total;
+            $('#changeAmount').text(`Change: ₹${change.toFixed(2)}`);
+        }
+        
+        $('#cashAmount').on('input', updateChangeAmount);
+        
+        // Apply discount
+        $('#applyDiscountBtn').click(function() {
+            let discountAmount = parseFloat($('#discountAmount').val()) || 0;
+            let discountType = $('#discountType').val();
+            
+            // In a real implementation, this would apply the discount to the cart
+            updateCartTotals();
+        });
+        
+        // Checkout
+        $('#checkoutBtn').click(function() {
+            if (cart.length === 0) {
+                alert('Cart is empty');
+                return;
+            }
+            
+            let paymentMethod = $('input[name="paymentMethod"]:checked').val();
+            let customerId = $('#customerSelect').val() || null;
+            let cashAmount = parseFloat($('#cashAmount').val()) || 0;
+            let discount = parseFloat($('#discountAmount').val()) || 0;
+            let discountType = $('#discountType').val();
+            
+            if (paymentMethod === 'Cash' && cashAmount < parseFloat($('#cartTotal').text().replace('₹', ''))) {
+                alert('Cash amount is less than total');
+                return;
+            }
+            
+            $.ajax({
+                url: '/api/checkout',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    customer_id: customerId,
+                    payment_method: paymentMethod,
+                    cash_amount: cashAmount,
+                    discount: discount,
+                    discount_type: discountType
+                }),
+                success: function(data) {
+                    if (data.success) {
+                        alert(`Order ${data.order_number} completed successfully`);
+                        cart = [];
+                        updateCartDisplay();
+                        updateCartTotals();
+                        
+                        // Reset form
+                        $('#customerSelect').val('');
+                        $('#cashAmount').val('');
+                        $('#discountAmount').val('0');
+                    } else {
+                        alert(data.error);
+                    }
+                }
+            });
+        });
+        
+        // New customer modal
+        $('#newCustomerBtn').click(function() {
+            $('#newCustomerModal').modal('show');
+        });
+        
+        $('#saveCustomerBtn').click(function() {
+            let name = $('#customerName').val();
+            let email = $('#customerEmail').val();
+            let phone = $('#customerPhone').val();
+            let address = $('#customerAddress').val();
+            
+            if (!name) {
+                alert('Customer name is required');
+                return;
+            }
+            
+            $.ajax({
+                url: '/customers/add',
+                type: 'POST',
+                data: {
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    address: address
+                },
+                success: function() {
+                    $('#newCustomerModal').modal('hide');
+                    $('#newCustomerForm')[0].reset();
+                    
+                    // Reload customers
+                    location.reload();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
