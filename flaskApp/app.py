@@ -681,7 +681,7 @@ def api_checkout():
     
     customer_id = request.json.get('customer_id')
     payment_method = request.json.get('payment_method')
-    cash_amount = request.json.get('cash_amount', 0)
+    cash_amount = float(request.json.get('cash_amount', 0))
     discount = request.json.get('discount', 0)
     discount_type = request.json.get('discount_type', 'fixed')
     template_type = request.json.get('template_type', 'default')
@@ -702,9 +702,9 @@ def api_checkout():
     
     # Calculate discount
     if discount_type == 'percentage':
-        discount_amount = subtotal * (discount / 100)
+        discount_amount = subtotal * (float(discount) / 100)
     else:
-        discount_amount = discount
+        discount_amount = float(discount)
     
     total = subtotal + tax - discount_amount
     
@@ -722,21 +722,23 @@ def api_checkout():
     try:
         cursor.execute("""
         INSERT INTO orders (
-            order_number, user_id, customer_id, status, 
+            order_number, user_id, customer_id, table_id, status, 
             order_date, total_amount, tax_amount, discount_amount, 
-            payment_method, payment_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            payment_method, payment_status, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             order_number, 
             session['user_id'], 
             customer_id, 
+            None,
             'completed',
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             total,
             tax,
             discount_amount,
             payment_method,
-            'paid'
+            'paid',
+            ''
         ))
         
         order_id = cursor.lastrowid
@@ -755,18 +757,28 @@ def api_checkout():
                 item['tax_rate']
             ))
             
-            # Update product stock
-            cursor.execute("""
-            UPDATE products SET stock = stock - ? WHERE id = ?
-            """, (item['quantity'], item['id']))
+            #Remove stock quantity update
+            #cursor.execute("""
+            #UPDATE products SET stock = stock - ? WHERE id = ?
+            #""", (item['quantity'], item['id']))
         
         conn.commit()
+
+        # Update product stock
+        for item in session['cart']:
+            cursor.execute("""
+            UPDATE products SET stock = CASE
+                WHEN stock - ? < 0 THEN 0
+                ELSE stock - ?
+            END
+            WHERE id = ?
+            """, (item['quantity'], item['quantity'], item['id']))
         
+        # Return success response with order details and template type
+
         # Clear cart
         session['cart'] = []
         session.modified = True
-        
-        # Return success response with order details and template type
         return jsonify({
             "success": True,
             "order_id": order_id,
@@ -776,7 +788,10 @@ def api_checkout():
     
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        error_message = traceback.format_exc()
+        print(error_message)
+        return jsonify({"error": error_message}), 500
     
     finally:
         conn.close()
@@ -1206,7 +1221,9 @@ def invoice(order_id):
     # Get order details
     order = conn.execute("""
     SELECT orders.*, customers.name as customer_name, customers.email, customers.phone, customers.address,
-           users.name as cashier_name
+           users.name as cashier_name,
+           (orders.total_amount - orders.discount_amount) as subtotal,
+           orders.tax_amount as tax, orders.discount_amount as discount, orders.total_amount as total
     FROM orders
     LEFT JOIN customers ON orders.customer_id = customers.id
     LEFT JOIN users ON orders.user_id = users.id
@@ -1241,7 +1258,9 @@ def invoice_with_template(order_id, template_type):
     # Get order details
     order = conn.execute("""
     SELECT orders.*, customers.name as customer_name, customers.email, customers.phone, customers.address,
-           users.name as cashier_name
+           users.name as cashier_name,
+           (orders.total_amount - orders.discount_amount) as subtotal,
+           orders.tax_amount as tax, orders.discount_amount as discount, orders.total_amount as total
     FROM orders
     LEFT JOIN customers ON orders.customer_id = customers.id
     LEFT JOIN users ON orders.user_id = users.id

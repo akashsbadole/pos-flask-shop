@@ -224,9 +224,7 @@
 {% block scripts %}
 <script>
     $(document).ready(function() {
-        let cart = [];
         let selectedCategory = '';
-        let total = 0; // Declare total here
         
         // Load products
         function loadProducts(categoryId = '', search = '') {
@@ -467,6 +465,8 @@
         
         // Checkout
         $('#checkoutBtn').click(function() {
+            let cart = [];
+            let total = 0;
             if (cart.length === 0) {
                 alert('Cart is empty');
                 return;
@@ -478,7 +478,11 @@
             let discount = parseFloat($('#discountAmount').val()) || 0;
             let discountType = $('#discountType').val();
             
-            if (paymentMethod === 'Cash' && cashAmount < parseFloat($('#cartTotal').text().replace('₹', ''))) {
+            // Calculate total
+            let subtotal = parseFloat($('#cartSubtotal').text().replace('₹', '')) || 0;
+            let cartTotal = parseFloat($('#cartTotal').text().replace('₹', '')) || 0;
+
+            if (paymentMethod === 'Cash' && cashAmount < cartTotal) {
                 alert('Cash amount is less than total');
                 return;
             }
@@ -581,16 +585,17 @@ $('#checkoutBtn').click(function() {
             discount_type: discount_type,
             template_type: template_type
         }),
-        success: function(response) {
-            if (response.success) {
-                // Open invoice in new window
-                window.open('/invoice/' + response.order_id + '/' + response.template_type, '_blank');
+                success: function(response) {
+                    if (response.success) {
+                        // Open invoice in new window
+                        window.open('/invoice/' + response.order_id + '/' + response.template_type, '_blank');
+
+                        updateCartDisplay();
                 
-                // Clear cart
-                cart = [];
-                updateCartDisplay();
+                        // Clear cart
+                        cart = [];
                 
-                // Reset payment fields
+                        // Reset payment fields
                 $('#cashAmount').val('');
                 $('#discountAmount').val('0');
                 
