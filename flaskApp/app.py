@@ -10,6 +10,7 @@ from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=7)
 
 # Database path
 DB_PATH = "pos_database.db"

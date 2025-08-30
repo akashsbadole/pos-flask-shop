@@ -10,6 +10,19 @@ Run the application:
 
 `python pos_desktop.py`
 
+## Screenshots
+
+![flask pos ](flask-pos.png "flask-pos")
+![flask pos ](flask-pos-dashboard.png "Optional Title")
+![flask pos ](flask-pos-login.png "Optional Title")
+![flask-pos-inventory ](flask-pos-inventory.png "flask-pos-inventory")
+![flask-pos-orders ](flask-pos-orders.png "flask-pos-orders")
+![flask-pos-reports ](flask-pos-reports.png "flask-pos-reports")
+![flask-pos-shift-management ](flask-pos-shift-management.png"flask-pos-shift-management")
+![flask-pos-usermanagement.png ](flask-pos-usermanagement.png "flask-pos-usermanagement")
+![flask-pos-customers ](flask-pos-customers.png "flask-pos-customers")
+![flask-pos-business-setting ](flask-pos-business-setting.png "flask-pos-business-setting")
+
 ## Flask Web Application
 
 #### Create a project folder with the following structure:
